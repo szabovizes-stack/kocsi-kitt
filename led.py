@@ -110,7 +110,7 @@ def run_scanner_animation_step_single(speed=0.08, r=255, g=0, b=0):
         scanner_direction = 1
 
 def play_audio_with_led(filename, speed=0.08, r=255, g=0, b=0, dynamic_acceleration=False, color_fade_to_yellow=False, dynamic_deceleration=False):
-    """Lejátssza az MP3-at, miközben opcionálisan gyorsítja vagy fokozatosan lassítja a LED-et"""
+    """Lejátssza az MP3-at a fixen beállított hw:0,0 kártyán, miközben kezeli a fényeffekteket"""
     path = os.path.join(SOUND_FOLDER, filename)
     cmd = ["mpg123", "-o", "alsa", "-a", "hw:0,0", "--buffer", "1024", path]
     
