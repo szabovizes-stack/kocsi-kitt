@@ -110,7 +110,7 @@ def run_scanner_animation_step_single(speed=0.08, r=255, g=0, b=0):
         scanner_direction = 1
 
 def play_audio_with_led(filename, speed=0.08, r=255, g=0, b=0, dynamic_acceleration=False, color_fade_to_yellow=False, dynamic_deceleration=False):
-    """Lejátssza az MP3-at a fixen beállított hw:0,0 kártyán, miközben kezeli a fényeffekteket"""
+    """Lejátssza az MP3-at, miközben opcionálisan gyorsítja vagy fokozatosan lassítja a LED-et"""
     path = os.path.join(SOUND_FOLDER, filename)
     cmd = ["mpg123", "-o", "alsa", "-a", "hw:0,0", "--buffer", "1024", path]
     
@@ -149,21 +149,24 @@ def process_and_respond():
     r.dynamic_energy_ratio = 1.5
     
     try:
+        # JAVÍTÁS: Előbb indítjuk el a LED animáció szálat, hogy a zajmérés alatt se akadjon meg!
+        anim_running = True
+        def animation_worker():
+            while anim_running:
+                run_listening_animation_step(r=255, g=0, b=0)
+        
+        anim_thread = threading.Thread(target=animation_worker)
+        anim_thread.start()
+        
+        # Amíg a fények külön szálon vajpuhán futnak, a fő szál elvégzi a hangrögzítést
         with sr.Microphone() as source:
             print("[RENDSZER] Környezeti zaj mérése...")
-            r.adjust_for_ambient_noise(source, duration=0.5)
-            print("[RENDSZER] Beszélhetsz! (Összefutó effekt fut)...")
+            r.adjust_for_ambient_noise(source, duration=0.4)
             
-            anim_running = True
-            def animation_worker():
-                while anim_running:
-                    run_listening_animation_step(r=255, g=0, b=0)
-            
-            anim_thread = threading.Thread(target=animation_worker)
-            anim_thread.start()
-            
+            print("[RENDSZER] Beszélhetsz! Hangrögzítés indítása...")
             audio_data = r.record(source, duration=4.0)
             
+            # Amint végzett a felvétel, biztonságosan leállítjuk az összefutó animációt
             anim_running = False
             anim_thread.join()
             
